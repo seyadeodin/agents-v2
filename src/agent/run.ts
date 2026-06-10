@@ -4,28 +4,31 @@ import { SYSTEM_PROMPT } from "./system/prompt";
 import type { AgentCallbacks } from "../types";
 import { tools } from "./tools";
 import { executeTool } from "../executeTool";
-import { Laminar } from "@lmnr-ai/lmnr";
+import { getTracer, Laminar } from "@lmnr-ai/lmnr";
 
-Laminar.initialize();
+Laminar.initialize({});
 
 const MODEL_NAME = "gpt-5-mini";
 
-const runModel = async (
+export const runAgent = async (
   userMessage: string,
   history: ModelMessage[],
-  callbacks: AgentCallbacks,
+  callbacks?: AgentCallbacks,
 ) => {
   const { text, toolCalls } = await generateText({
     model: openai(MODEL_NAME),
     system: SYSTEM_PROMPT,
     prompt: userMessage,
     tools,
+    experimental_telemetry: {
+      isEnabled: true,
+      tracer: getTracer(),
+    },
   });
 
-  console.log("🚀 ~ runModel ~ text:", text);
+  await Laminar.flush();
+
   toolCalls.forEach(async (call) => {
     console.log(await executeTool(call.toolName, call.input));
   });
 };
-
-runModel("What time is it?", [], []);

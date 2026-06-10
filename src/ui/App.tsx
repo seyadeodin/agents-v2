@@ -87,7 +87,7 @@ export function App() {
           },
         });
 
-        setConversationHistory(newHistory);
+        setConversationHistory(newHistory as any);
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
@@ -140,11 +140,14 @@ export function App() {
           </Box>
         )}
 
-        {isLoading && !streamingText && activeToolCalls.length === 0 && !pendingApproval && (
-          <Box marginTop={1}>
-            <Spinner />
-          </Box>
-        )}
+        {isLoading &&
+          !streamingText &&
+          activeToolCalls.length === 0 &&
+          !pendingApproval && (
+            <Box marginTop={1}>
+              <Spinner />
+            </Box>
+          )}
 
         {pendingApproval && (
           <ToolApproval

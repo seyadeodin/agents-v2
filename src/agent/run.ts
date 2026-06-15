@@ -5,6 +5,7 @@ import type { AgentCallbacks } from "../types";
 import { tools } from "./tools";
 import { executeTool } from "../executeTool";
 import { getTracer, Laminar } from "@lmnr-ai/lmnr";
+import { filterCompatibleMessages } from "./system/filterMessages";
 
 Laminar.initialize({});
 

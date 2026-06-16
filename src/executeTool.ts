@@ -1,4 +1,4 @@
-import { tools } from "./agent/tools";
+import { tools } from "./agent/tools/index.ts";
 
 type ToolsName = keyof typeof tools;
 

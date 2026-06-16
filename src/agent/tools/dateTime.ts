@@ -3,7 +3,7 @@ import z from "zod";
 
 export const dateTime = tool({
   description:
-    "Return the current date and time. Use this tool before any time related task",
+    "Return the current date and time. Use this tool before any time related task. After getting the output using it to generate a human readable final answer.",
   //args: null,
   //id: "current-date-time",
   inputSchema: z.object({}),

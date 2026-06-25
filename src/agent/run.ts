@@ -6,6 +6,9 @@ import { tools } from "./tools/index.ts";
 import { executeTool } from "../executeTool.ts";
 import { getTracer, Laminar } from "@lmnr-ai/lmnr";
 import { filterCompatibleMessages } from "./system/filterMessages.ts";
+import { estimateMessagesTokens } from "./context/tokenEstimator.ts";
+import { calculateUsagePercentage, DEFAULT_THRESHOLD, getModelLimits, isOverThreshold } from "./context/modelLimits.ts";
+import { compactConversation } from "./context/compaction.ts";
 
 Laminar.initialize({});
 
@@ -78,7 +81,8 @@ export const runAgent = async (
   history: ModelMessage[],
   callbacks?: AgentCallbacks,
 ) => {
-  const workingHistory = filterCompatibleMessages(history);
+  let workingHistory = filterCompatibleMessages(history);
+  const modelLimits = getModelLimits(MODEL_NAME);
 
   const skillsList = Object.keys(SKILLS);
   const selectedSkill = skillsList.find(skill => userMessage.includes(skill));
@@ -93,6 +97,11 @@ export const runAgent = async (
   ];
 
   let fullResponse = "";
+
+  const preCheckedTokens = estimateMessagesTokens(messages);
+  if(isOverThreshold(preCheckedTokens.total, modelLimits.contextWindow)) {
+    workingHistory = await compactConversation(workingHistory, MODEL_NAME)
+  }
 
   while (true) {
     const result = streamText({
@@ -109,6 +118,24 @@ export const runAgent = async (
         }
       }
     });
+
+    const reportTokenUsage = () => {
+      if(callbacks?.onTokenUsage) {
+        const usage = estimateMessagesTokens(messages);
+        callbacks.onTokenUsage({
+          inputTokens: usage.input,
+          outputTokens: usage.output,
+          totalTokens: usage.total,
+          contextWindow: modelLimits.contextWindow,
+          threshold: DEFAULT_THRESHOLD,
+          percentage: calculateUsagePercentage(
+            usage.total,
+            modelLimits.contextWindow
+          )
+        })
+      }
+    }
+    
 
     const toolCalls: ToolCallInfo[] = [];
     let currentText = "";
@@ -155,6 +182,7 @@ export const runAgent = async (
     if (finishReason !== "tool-calls" || toolCalls.length === 0) {
       const responseMessages = await result.response;
       messages.push(...responseMessages.messages);
+    reportTokenUsage();
       break;
     }
 
@@ -176,6 +204,7 @@ export const runAgent = async (
           },
         ],
       });
+    reportTokenUsage();
     }
   }
 

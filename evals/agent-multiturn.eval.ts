@@ -1,17 +1,21 @@
 import { evaluate } from "@lmnr-ai/lmnr";
-import { toolOrderCorrect, toolsAvoided, llmJudge }  from "./evaluators.ts";
-import type { MultiTurnEvalData, MultiTurnResult, MultiTurnTarget } from "./types";
-import dataset from "./data/agent-multiturn.json" with {type: "json"};
+import { toolOrderCorrect, toolsAvoided, llmJudge } from "./evaluators.ts";
+import type {
+  MultiTurnEvalData,
+  MultiTurnResult,
+  MultiTurnTarget,
+} from "./types";
+import dataset from "./data/agent-multiturn.json" with { type: "json" };
 import { multiTurnWithMocks } from "./executors";
 
-const executor = async(data: MultiTurnEvalData): Promise<MultiTurnResult> => {
+const executor = async (data: MultiTurnEvalData): Promise<MultiTurnResult> => {
   return multiTurnWithMocks(data);
-}
+};
 
 evaluate({
   data: dataset as unknown as Array<{
-    data: MultiTurnEvalData,
-    target: MultiTurnTarget,
+    data: MultiTurnEvalData;
+    target: MultiTurnTarget;
   }>,
   executor,
   evaluators: {
@@ -28,5 +32,5 @@ evaluate({
       return llmJudge(output, target);
     },
   },
-  groupName: "agent-multiturn"
-})
+  groupName: "agent-multiturn",
+});

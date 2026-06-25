@@ -3,10 +3,10 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 
 import type {
-	EvalTarget,
-	SingleTurnResult,
-	MultiTurnTarget,
-	MultiTurnResult,
+  EvalTarget,
+  SingleTurnResult,
+  MultiTurnTarget,
+  MultiTurnResult,
 } from "./types.ts";
 
 /**
@@ -15,32 +15,32 @@ import type {
  * For secondary prompts.
  */
 export function toolSelectionScore(
-	output: SingleTurnResult,
-	target: EvalTarget,
+  output: SingleTurnResult,
+  target: EvalTarget,
 ): number {
-	if (!target.expectedTools?.length) {
-		return output.selectedAny ? 0.5 : 1;
-	}
+  if (!target.expectedTools?.length) {
+    return output.selectedAny ? 0.5 : 1;
+  }
 
-	const expected = new Set(target.expectedTools);
-	const selected = new Set(output.toolNames);
+  const expected = new Set(target.expectedTools);
+  const selected = new Set(output.toolNames);
 
-	const hits = output.toolNames.filter((t) => expected.has(t)).length;
-	const precision = selected.size > 0 ? hits / selected.size : 0;
-	const recall = expected.size > 0 ? hits / expected.size : 0;
+  const hits = output.toolNames.filter((t) => expected.has(t)).length;
+  const precision = selected.size > 0 ? hits / selected.size : 0;
+  const recall = expected.size > 0 ? hits / expected.size : 0;
 
-	// Simple F1-ish score
-	if (precision + recall === 0) return 0;
-	return (2 * precision * recall) / (precision + recall);
+  // Simple F1-ish score
+  if (precision + recall === 0) return 0;
+  return (2 * precision * recall) / (precision + recall);
 }
 
 const judgeSchema = z.object({
-	score: z
-		.number()
-		.min(0)
-		.max(10)
-		.describe("Score from 1-10 where 10 is perfect"),
-	reason: z.string().describe("Brief explanation for the score"),
+  score: z
+    .number()
+    .min(0)
+    .max(10)
+    .describe("Score from 1-10 where 10 is perfect"),
+  reason: z.string().describe("Brief explanation for the score"),
 });
 
 export function toolOrderCorrect(
@@ -54,7 +54,7 @@ export function toolOrderCorrect(
   let expectedIdx = 0;
   for (const tooName of actualOrder) {
     if (tooName === target.expectedToolOrder[expectedIdx]) {
-      expectedIdx++
+      expectedIdx++;
       if (expectedIdx === target.expectedToolOrder.length) break;
     }
   }
@@ -66,19 +66,19 @@ export function toolsAvoided(
   output: MultiTurnResult | SingleTurnResult,
   target: MultiTurnTarget | EvalTarget,
 ) {
-  if(!target.forbiddenTools?.length) return 1;
+  if (!target.forbiddenTools?.length) return 1;
 
   const selected = new Set(
     "toolNames" in output ? output.toolNames : output.toolsUsed,
-  )
+  );
 
-  return target.forbiddenTools.some(t => selected.has(t)) ? 0 : 1;
+  return target.forbiddenTools.some((t) => selected.has(t)) ? 0 : 1;
 }
 
 export async function llmJudge(
   output: MultiTurnResult,
   target: MultiTurnTarget,
-): Promise<number> {
+): Promise<any> {
   //const result = await generateText
   const result = await generateObject({
     model: openai("gpt-5.1"),
@@ -114,11 +114,13 @@ Agent final response:
 
 Evaluate if the response correctly uses the tool results to answer the task.
 
-`
-      }
-    ]
-  })
+`,
+      },
+    ],
+  });
 
-
-  return result.object.score / 10;
-};
+  return {
+    score: result.object.score / 10,
+    reason: result.object.reason,
+  };
+}
